@@ -1,5 +1,6 @@
 streamlit
 transformers
-torch>=2.8.0
-PyPDF2
+torch
 sentencepiece
+PyPDF2
+pandas
