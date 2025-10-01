@@ -6,7 +6,7 @@ import PyPDF2
 @st.cache_resource
 def load_model():
     MODEL_NAME = "google/mt5-small"
-    tokenizer = MT5Tokenizer.from_pretrained(MODEL_NAME)
+    tokenizer = MT5Tokenizer.from_pretrained(MODEL_NAME, legacy=False)  # عشان التحذير يختفي
     model = MT5ForConditionalGeneration.from_pretrained(MODEL_NAME)
     generator = pipeline("text2text-generation", model=model, tokenizer=tokenizer)
     return generator
