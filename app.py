@@ -6,7 +6,7 @@ import PyPDF2
 @st.cache_resource
 def load_model():
     MODEL_NAME = "google/mt5-small"
-    tokenizer = MT5Tokenizer.from_pretrained(MODEL_NAME, legacy=False)  # عشان التحذير يختفي
+    tokenizer = MT5Tokenizer.from_pretrained(MODEL_NAME)
     model = MT5ForConditionalGeneration.from_pretrained(MODEL_NAME)
     generator = pipeline("text2text-generation", model=model, tokenizer=tokenizer)
     return generator
@@ -32,21 +32,50 @@ def ask_model(prompt: str, max_new_tokens=500):
     return outputs[0]["generated_text"]
 
 # ================= Streamlit App =================
-st.title("📄 AI Paper Assistant (Arabic & English)")
+st.title("📄 AI Paper Assistant")
 
-uploaded_file = st.file_uploader("ارفع ورقة PDF", type=["pdf"])
+# اختيار اللغة
+lang = st.radio("🌍 اختر اللغة / Choose Language", ["العربية", "English"])
+
+# Labels حسب اللغة
+labels = {
+    "العربية": {
+        "upload": "ارفع ورقة PDF",
+        "uploaded": "✅ تم رفع الملف بنجاح",
+        "extracted": "📑 النص المستخرج من الورقة",
+        "analyze": "🔍 تحليل الورقة",
+        "classify": "📌 التصنيف",
+        "summary": "📝 الملخص",
+        "ask": "❓ اسأل سؤال عن الورقة",
+        "q_input": "اكتب سؤالك هنا",
+        "answer_btn": "إجابة",
+        "answer": "💡 الإجابة",
+    },
+    "English": {
+        "upload": "Upload PDF paper",
+        "uploaded": "✅ File uploaded successfully",
+        "extracted": "📑 Extracted text",
+        "analyze": "🔍 Analyze Paper",
+        "classify": "📌 Classification",
+        "summary": "📝 Summary",
+        "ask": "❓ Ask a question about the paper",
+        "q_input": "Type your question here",
+        "answer_btn": "Answer",
+        "answer": "💡 Answer",
+    }
+}
+
+uploaded_file = st.file_uploader(labels[lang]["upload"], type=["pdf"])
 
 if uploaded_file:
-    st.success("✅ تم رفع الملف بنجاح")
+    st.success(labels[lang]["uploaded"])
 
     text = extract_text_from_pdf(uploaded_file)
-    st.subheader("📑 النص المستخرج من الورقة")
+    st.subheader(labels[lang]["extracted"])
     st.text_area("Extracted Text", text[:3000] + ("..." if len(text) > 3000 else ""), height=200)
 
-    lang = st.radio("🌍 اختر اللغة", ["العربية", "English"])
-
-    if st.button("🔍 تحليل الورقة"):
-        with st.spinner("⏳ جاري التحليل..."):
+    if st.button(labels[lang]["analyze"]):
+        with st.spinner("⏳ Processing..."):
 
             if lang == "العربية":
                 classify_prompt = f"صنّف هذه الورقة العلمية حسب مجالها ونوعها:\n{text[:1500]}"
@@ -58,20 +87,20 @@ if uploaded_file:
             classification = ask_model(classify_prompt, max_new_tokens=200)
             summary = ask_model(summary_prompt, max_new_tokens=400)
 
-        st.subheader("📌 التصنيف / Classification")
+        st.subheader(labels[lang]["classify"])
         st.write(classification)
 
-        st.subheader("📝 الملخص / Summary")
+        st.subheader(labels[lang]["summary"])
         st.write(summary)
 
-    st.subheader("❓ اسأل سؤال عن الورقة")
-    question = st.text_input("اكتب سؤالك / Type your question")
-    if st.button("إجابة / Answer"):
+    st.subheader(labels[lang]["ask"])
+    question = st.text_input(labels[lang]["q_input"])
+    if st.button(labels[lang]["answer_btn"]):
         if lang == "العربية":
             qa_prompt = f"النص التالي من ورقة علمية:\n{text[:1500]}\n\nالسؤال: {question}\nالإجابة:"
         else:
             qa_prompt = f"The following text is from a research paper:\n{text[:1500]}\n\nQuestion: {question}\nAnswer:"
         
         answer = ask_model(qa_prompt, max_new_tokens=300)
-        st.subheader("💡 الإجابة / Answer")
+        st.subheader(labels[lang]["answer"])
         st.write(answer)
